@@ -73,6 +73,9 @@
   color-scheme: light;
 }
 
+/* ─── Hidden utility (override display:flex/grid on modal-backdrop) ─── */
+[hidden] { display: none !important; }
+
 /* ─── Reset & base ───────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
