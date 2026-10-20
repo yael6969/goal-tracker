@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Goal Tracker</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ─── Header ───────────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div class="brand-name">Goal<span>Tracker</span></div>
+      </div>
+      <button class="btn btn-primary" id="btn-add-header">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Tambah Goal
+      </button>
+    </div>
+  </header>
+
+  <!-- ─── Main ─────────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Loading spinner -->
+    <div class="loading-wrap" id="loading">
+      <div class="spinner"></div>
+      Memuat data...
+    </div>
+
+    <!-- Firebase error banner -->
+    <div class="error-banner" id="firebase-error" hidden>
+      <strong>Koneksi Firebase gagal</strong>
+      <span class="err-msg"></span>
+    </div>
+
+    <!-- App content -->
+    <div id="app-content" hidden>
+
+      <!-- Empty state -->
+      <div class="empty-state" id="empty-state" hidden>
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 8v4l3 3"/>
+          </svg>
+        </div>
+        <div>
+          <div class="empty-title">Belum ada goal</div>
+          <p class="empty-desc">Mulai dengan menambahkan goal pertamamu. Tentukan target item dan harga, lalu pantau progresmu.</p>
+        </div>
+        <button class="btn btn-primary" id="btn-add-empty">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Buat Goal Pertama
+        </button>
+      </div>
+
+      <!-- Grid header -->
+      <div class="grid-header" id="grid-header" hidden>
+        <div>
+          <span class="grid-title" id="goal-count">0 goals</span>
+          <span class="grid-title-sub" id="goal-done"></span>
+        </div>
+        <button class="btn btn-primary" id="btn-add-grid">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Tambah
+        </button>
+      </div>
+
+      <!-- Goals grid (populated by app.js) -->
+      <div class="goals-grid" id="goals-container"></div>
+
+    </div>
+  </main>
+
+  <!-- ─── Toast container ───────────────────────────────────────────── -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <!-- ─── Modal: Tambah Goal ───────────────────────────────────────── -->
+  <div class="modal-backdrop" id="add-modal" hidden
+    role="dialog" aria-modal="true" aria-labelledby="add-modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="add-modal-title">Tambah Goal Baru</div>
+        <button class="modal-close" id="add-modal-close" aria-label="Tutup">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="add-form" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="add-name">Nama Goal</label>
+          <input class="form-input" id="add-name" type="text"
+            placeholder="mis. Beli Sepatu Nike" maxlength="80" autocomplete="off" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="add-total">Jumlah Item</label>
+          <input class="form-input mono" id="add-total" type="text"
+            inputmode="numeric" pattern="[0-9]*" placeholder="mis. 10" autocomplete="off" required>
+          <span class="form-hint">Berapa banyak item yang ingin kamu kumpulkan?</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="add-price">Harga per Item (Rp)</label>
+          <input class="form-input mono" id="add-price" type="text"
+            inputmode="numeric" pattern="[0-9]*" placeholder="mis. 500000" autocomplete="off" required>
+          <span class="form-hint">Harga satu item dalam Rupiah. Bisa diubah saat update.</span>
+        </div>
+        <div class="form-summary">
+          <span class="form-summary-label">Total harga goal</span>
+          <span class="form-summary-value" id="add-summary-val">Rp 0</span>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="add-cancel">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Goal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─── Modal: Update Progress ───────────────────────────────────── -->
+  <div class="modal-backdrop" id="update-modal" hidden
+    role="dialog" aria-modal="true" aria-labelledby="upd-modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="upd-modal-title">Update Progress</div>
+        <button class="modal-close" id="upd-modal-close" aria-label="Tutup">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="update-info">
+        <div class="update-info-title" id="upd-goal-name">—</div>
+        <div class="update-info-meta" id="upd-goal-meta">—</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="upd-price-input">Harga per Item saat ini (Rp)</label>
+        <input class="form-input mono" id="upd-price-input" type="text"
+          inputmode="numeric" pattern="[0-9]*" placeholder="mis. 500000" autocomplete="off">
+        <span class="form-hint">Perbarui jika harga berubah dari sebelumnya.</span>
+      </div>
+      <div class="form-summary">
+        <span class="form-summary-label">Nilai terkumpul setelah update</span>
+        <span class="form-summary-value" id="upd-preview">Rp 0</span>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="upd-cancel">Batal</button>
+        <button class="btn btn-primary" id="upd-confirm">Simpan Update</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Modal: Konfirmasi Hapus ──────────────────────────────────── -->
+  <div class="modal-backdrop" id="delete-modal" hidden
+    role="dialog" aria-modal="true" aria-labelledby="del-modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="del-modal-title">Hapus Goal?</div>
+        <button class="modal-close" id="del-modal-close" aria-label="Tutup">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <p style="color:var(--fg-muted);font-size:0.9rem;line-height:1.6;margin-bottom:20px;">
+        Goal <strong id="del-goal-name" style="color:var(--fg)"></strong> akan dihapus
+        permanen beserta seluruh progressnya. Tindakan ini tidak bisa dibatalkan.
+      </p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="del-cancel">Batal</button>
+        <button class="btn btn-danger" id="del-confirm-btn">Ya, Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── App script ────────────────────────────────────────────────── -->
+  <script type="module" src="app.js"></script>
+
+</body>
+</html>
